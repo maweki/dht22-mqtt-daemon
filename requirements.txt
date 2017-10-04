@@ -1,3 +1,3 @@
-Adafruit-Python-DHT==1.1.2
+git+https://github.com/adafruit/Adafruit_Python_DHT.git
 paho-mqtt==1.2
 configparser==3.5.0
