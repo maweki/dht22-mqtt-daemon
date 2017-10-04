@@ -5,6 +5,7 @@ import time
 import Adafruit_DHT
 from configparser import ConfigParser
 import json
+from collections import deque
 
 config = ConfigParser(delimiters=('=', ))
 config.read('config.ini')
@@ -37,18 +38,26 @@ client.connect(config['mqtt'].get('hostname', 'homeassistant'),
                config['mqtt'].getint('timeout', 60))
 client.loop_start()
 
+temps = deque((), 3)
+humids = deque((), 3)
+
 while True:
 
     humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 
-    if humidity is not None and temperature is not None:
-        data = {'temperature': round(temperature, decim_digits),
+    if humidity:
+        humids.append(humidity)
+    if temperature:
+        temps.append(temperature)
+    changes = temperature and humidity
+    print('Data: ', temps, humids)
+    if len(humids) >= 2 and len(temps) >= 2 and changes:
+        humidity = sorted(humids)[1]
+        temperature = sorted(temps)[1]
+
+        entry = {'temperature': round(temperature, decim_digits),
                 'humidity': round(humidity, decim_digits)}
-
-        client.publish(topic, json.dumps(data))
-
-        print('Published. Sleeping ...')
-    else:
-        print('Failed to get reading. Skipping ...')
+        client.publish(topic, json.dumps(entry))
+        print('Published.', entry, 'Sleeping ...')
 
     time.sleep(sleep_time)
