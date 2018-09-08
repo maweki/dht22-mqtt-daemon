@@ -62,4 +62,4 @@ while True:
         print('Published.', entry, 'Sleeping ...')
         next_pub = time.time() + sleep_time
 
-    time.sleep(1)
+    time.sleep(0.5)
