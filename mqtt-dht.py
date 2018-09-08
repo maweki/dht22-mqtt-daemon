@@ -38,8 +38,10 @@ client.connect(config['mqtt'].get('hostname', 'homeassistant'),
                config['mqtt'].getint('timeout', 60))
 client.loop_start()
 
-temps = deque((), 3)
-humids = deque((), 3)
+temps = deque((), sleep_time)
+humids = deque((), sleep_time)
+
+next_pub = 0
 
 while True:
 
@@ -49,15 +51,15 @@ while True:
         humids.append(humidity)
     if temperature:
         temps.append(temperature)
-    changes = temperature and humidity
-    print('Data: ', temps, humids)
-    if len(humids) >= 2 and len(temps) >= 2 and changes:
-        humidity = sorted(humids)[1]
-        temperature = sorted(temps)[1]
+
+    if len(humids) > sleep_time / 2 and len(temps) > sleep_time / 2 and time.time() >= next_pub:
+        humidity = sorted(humids)[sleep_time / 2]
+        temperature = sorted(temps)[sleep_time / 2]
 
         entry = {'temperature': round(temperature, decim_digits),
                 'humidity': round(humidity, decim_digits)}
         client.publish(topic, json.dumps(entry))
         print('Published.', entry, 'Sleeping ...')
+        next_pub = time.time() + sleep_time
 
-    time.sleep(sleep_time)
+    time.sleep(1)
